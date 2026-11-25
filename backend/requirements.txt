@@ -1,0 +1,5 @@
+fastapi==0.165.0
+uvicorn==0.54.0
+sqlmodel==0.0.50
+PyJWT==2.15.1
+pytest==9.2.0
