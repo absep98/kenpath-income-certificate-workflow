@@ -2,7 +2,7 @@
 
 A workflow app that helps Karnataka revenue officers move Income Certificate applications from intake to a final decision, in Kannada, with AI help at each step and a human making every decision.
 
-**Live app:** _add Render URL here_
+**Live app:** https://kenpath-workflow.onrender.com (free hosting: the first load after idle can take about 50 seconds)
 **Demo logins** (password for all: `demo123`): `suresh` (Village Accountant), `meena` (Revenue Inspector), `rao` (Tahsildar)
 
 ## 1. The problem and who it affects
