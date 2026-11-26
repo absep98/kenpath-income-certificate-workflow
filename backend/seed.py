@@ -28,20 +28,20 @@ TO_RI = TO_FIELD + [(FWD, VA, "ಸ್ಥಳ ಪರಿಶೀಲನೆ ಪೂರ�
 TO_FINAL = TO_RI + [(FWD, RI, "ದಾಖಲೆಗಳು ಹೊಂದಾಣಿಕೆಯಾಗಿವೆ")]
 RETURNED = TO_RI + [(RET, RI, "ಆದಾಯ ಘೋಷಣೆ ಸ್ಪಷ್ಟವಿಲ್ಲ, ಮತ್ತೊಮ್ಮೆ ಪರಿಶೀಲಿಸಿ")]
 
-# (name, village, income, occupation, family, documents, days_old, path)
+# (name, village, income, occupation, family, documents, days_old, days_at_stage, path)
 CASES = [
     # Waiting for the Village Accountant (new)
-    ("ರಾಜೇಶ್ ಕುಮಾರ್", "ಹೆಬ್ಬಾಳ", 85000, "ಕೃಷಿ ಕೂಲಿ", 5, ALL_DOCS, 9, []),
-    ("ಲಕ್ಷ್ಮಿ ದೇವಿ", "ಯಲಹಂಕ", 60000, "ದಿನಗೂಲಿ", 4, "aadhaar,photo", 2, []),
+    ("ರಾಜೇಶ್ ಕುಮಾರ್", "ಹೆಬ್ಬಾಳ", 85000, "ಕೃಷಿ ಕೂಲಿ", 5, ALL_DOCS, 9, 9, []),
+    ("ಲಕ್ಷ್ಮಿ ದೇವಿ", "ಯಲಹಂಕ", 60000, "ದಿನಗೂಲಿ", 4, "aadhaar,photo", 2, 2, []),
     # In field verification (Village Accountant)
-    ("ಮಂಜುನಾಥ್ ಗೌಡ", "ದೊಡ್ಡಬಳ್ಳಾಪುರ", 120000, "ಚಿಕ್ಕ ಅಂಗಡಿ", 4, ALL_DOCS, 12, TO_FIELD),
-    ("ಸುಮಿತ್ರಾ ಬಾಯಿ", "ನೆಲಮಂಗಲ", 900000, "ದಿನಗೂಲಿ", 3, ALL_DOCS, 5, TO_FIELD),
-    ("ಶಿವಕುಮಾರ್", "ಹೊಸಕೋಟೆ", 95000, "ಆಟೋ ಚಾಲಕ", 5, ALL_DOCS, 3, RETURNED),
+    ("ಮಂಜುನಾಥ್ ಗೌಡ", "ದೊಡ್ಡಬಳ್ಳಾಪುರ", 120000, "ಚಿಕ್ಕ ಅಂಗಡಿ", 4, ALL_DOCS, 12, 6, TO_FIELD),
+    ("ಸುಮಿತ್ರಾ ಬಾಯಿ", "ನೆಲಮಂಗಲ", 900000, "ದಿನಗೂಲಿ", 3, ALL_DOCS, 5, 3, TO_FIELD),
+    ("ಶಿವಕುಮಾರ್", "ಹೊಸಕೋಟೆ", 95000, "ಆಟೋ ಚಾಲಕ", 5, ALL_DOCS, 3, 1, RETURNED),
     # In RI review
-    ("ಅನಿತಾ ಎಸ್", "ಹೆಬ್ಬಾಳ", 70000, "ಟೈಲರ್", 3, ALL_DOCS, 7, TO_RI),
+    ("ಅನಿತಾ ಎಸ್", "ಹೆಬ್ಬಾಳ", 70000, "ಟೈಲರ್", 3, ALL_DOCS, 7, 2, TO_RI),
     # Waiting for the Tahsildar
-    ("ರಮೇಶ್ ನಾಯ್ಕ್", "ಯಲಹಂಕ", 110000, "ಕೃಷಿ", 6, ALL_DOCS, 10, TO_FINAL),
-    ("ಗೀತಾ ಹೆಗಡೆ", "ನೆಲಮಂಗಲ", 80000, "ಟೈಲರ್", 4, ALL_DOCS, 4, TO_FINAL),
+    ("ರಮೇಶ್ ನಾಯ್ಕ್", "ಯಲಹಂಕ", 110000, "ಕೃಷಿ", 6, ALL_DOCS, 10, 4, TO_FINAL),
+    ("ಗೀತಾ ಹೆಗಡೆ", "ನೆಲಮಂಗಲ", 80000, "ಟೈಲರ್", 4, ALL_DOCS, 4, 1, TO_FINAL),
 ]
 
 
@@ -49,7 +49,7 @@ def seed():
     SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
-        for name, village, income, occupation, family, docs, days_old, path in CASES:
+        for name, village, income, occupation, family, docs, days_old, days_at_stage, path in CASES:
             application = Application(
                 applicant_name=name,
                 village=village,
@@ -64,6 +64,10 @@ def seed():
             session.refresh(application)
             for action, role, reason in path:
                 perform_action(session, application.id, action, role, ACTOR[role], reason)
+            # Back-date the stage entry so the queue shows realistic waiting times.
+            application.stage_entered_at = datetime.now(timezone.utc) - timedelta(days=days_at_stage)
+            session.add(application)
+            session.commit()
     print(f"Seeded {len(CASES)} applications.")
 
 

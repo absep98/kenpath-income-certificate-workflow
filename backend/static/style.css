@@ -160,3 +160,7 @@ ol.timeline .t-reason { margin-top: 2px; }
   body { font-size: 16px; }
   .actions button { min-width: 100%; }
 }
+
+/* Flag chips on queue cards: what needs attention, visible without opening the case */
+.card .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.flag-chip { background: #fdf0d9; color: var(--warn); border-radius: 8px; padding: 2px 10px; font-size: 14px; font-weight: 600; }

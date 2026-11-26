@@ -24,7 +24,7 @@ tells the officer what to look at first. The citizen sees "pending" with no reas
 Officer: system, plus Village Accountant picks it up (assumption)
 Responsibilities: confirm the application is complete and assign it to the right VA by village.
 Documents checked: identity proof, address proof, income declaration or affidavit, photo (assumption).
-Possible actions: forward to Field Verification, or return to citizen if documents are missing.
+Possible actions in the app: forward to Field Verification, or reject with a reason. (A real return-to-citizen step is not built; see README next steps.)
 **AI helps:** flag missing or unreadable documents.
 
 ### Stage 2: Field Verification
@@ -32,13 +32,13 @@ Officer: Village Accountant (VA) **(verified role)**
 Responsibilities: verify the applicant lives there and the declared income is plausible, on the ground.
 Documents checked: residence, family details, income declaration.
 Possible actions: forward to RI Review, return for correction, or reject with a reason.
-**AI helps:** compare the declared income with the occupation and family size and flag inconsistencies.
+**AI helps:** suggests three things to check or ask during the household visit, based on occupation, family size, declared income and any flags. It does not decide whether the income is plausible.
 The VA decides.
 
 ### Stage 3: Revenue Inspector Review
 Officer: Revenue Inspector (RI) **(verified role)**
 Responsibilities: cross-check the VA's report and the documents, and confirm the case is consistent.
-Documents checked: VA report plus original documents.
+Documents checked: the documents and the VA's note (the app has no structured VA report yet).
 Possible actions: forward to Final Decision, return to VA, or reject with a reason.
 **AI helps:** summarise the whole case in plain Kannada so the RI reads one paragraph first.
 
@@ -46,7 +46,7 @@ Possible actions: forward to Final Decision, return to VA, or reject with a reas
 Officer: Tahsildar **(assumption: final issuing authority)**
 Responsibilities: approve and issue, reject, or send back.
 Documents checked: the RI's recommendation and the case summary.
-Possible actions: Approve, Reject, or Return (to RI or VA).
+Possible actions: Approve, Reject, or Return (to the Revenue Inspector).
 **AI helps:** draft the reason text for the decision. The officer edits it and clicks the button.
 
 ## 3. Common delays

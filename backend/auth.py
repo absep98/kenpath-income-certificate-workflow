@@ -8,7 +8,14 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from workflow import Role
 
 
-SECRET = os.environ.get("SECRET", "dev-secret-abhisheksharma")
+# The fallback exists only so local development works with zero setup.
+# On Render (which sets RENDER=true) the app refuses to start without a real SECRET,
+# so a public default can never be used to forge tokens in production.
+SECRET = os.environ.get("SECRET")
+if not SECRET:
+    if os.environ.get("RENDER"):
+        raise RuntimeError("SECRET environment variable must be set in production")
+    SECRET = "local-dev-only-secret-change-me-0123456789"
 ALGO = "HS256"
 
 USERS = {

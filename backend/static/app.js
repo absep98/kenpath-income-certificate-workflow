@@ -3,20 +3,21 @@
 /* ---------- Translations (Kannada default, English toggle) ---------- */
 const T = {
   kn: {
-    appTitle: "ಅರ್ಜಿ ಕೆಲಸದ ಹರಿವು",
-    appSub: "ಆದಾಯ ಪ್ರಮಾಣಪತ್ರ",
+    appTitle: "ಆದಾಯ ಪ್ರಮಾಣಪತ್ರ ಅರ್ಜಿಗಳು",
+    appSub: "ಅಧಿಕಾರಿಗಳಿಗಾಗಿ",
     login: "ಲಾಗಿನ್",
     username: "ಬಳಕೆದಾರ ಹೆಸರು",
     password: "ಪಾಸ್‌ವರ್ಡ್",
     signIn: "ಒಳಗೆ ಹೋಗಿ",
-    signOut: "ಹೊರಗೆ",
+    signOut: "ಲಾಗ್ ಔಟ್",
     wrongLogin: "ಬಳಕೆದಾರ ಹೆಸರು ಅಥವಾ ಪಾಸ್‌ವರ್ಡ್ ತಪ್ಪಾಗಿದೆ",
     demoHint: "ಡೆಮೊ ಬಳಕೆದಾರರು (ಪಾಸ್‌ವರ್ಡ್: demo123)",
     queueTitle: "ನಿಮ್ಮ ಬಾಕಿ ಅರ್ಜಿಗಳು",
     pending: "ಬಾಕಿ",
     urgent: "ತುರ್ತು",
     noPending: "ಯಾವುದೇ ಬಾಕಿ ಅರ್ಜಿಗಳಿಲ್ಲ",
-    waiting: (n) => `${n} ದಿನಗಳಿಂದ ಕಾಯುತ್ತಿದೆ`,
+    waiting: (n) => `ಈ ಹಂತದಲ್ಲಿ ${n} ದಿನ`,
+    totalDays: (n) => `ಒಟ್ಟು ${n} ದಿನ`,
     back: "← ಹಿಂದೆ",
     village: "ಗ್ರಾಮ",
     income: "ಘೋಷಿತ ವಾರ್ಷಿಕ ಆದಾಯ",
@@ -44,7 +45,7 @@ const T = {
     statusNames: {
       submitted: "ಹೊಸ ಅರ್ಜಿ",
       field_verification: "ಸ್ಥಳ ಪರಿಶೀಲನೆ",
-      ri_review: "ರಾಜಸ್ವ ನಿರೀಕ್ಷಕರ ಪರಿಶೀಲನೆ",
+      ri_review: "ಕಂದಾಯ ನಿರೀಕ್ಷಕರ ಪರಿಶೀಲನೆ",
       final_decision: "ಅಂತಿಮ ತೀರ್ಮಾನ",
       approved: "ಅನುಮೋದಿತ",
       rejected: "ತಿರಸ್ಕೃತ",
@@ -63,19 +64,13 @@ const T = {
     },
     roleNames: {
       village_accountant: "ಗ್ರಾಮ ಲೆಕ್ಕಾಧಿಕಾರಿ",
-      revenue_inspector: "ರಾಜಸ್ವ ನಿರೀಕ್ಷಕ",
+      revenue_inspector: "ಕಂದಾಯ ನಿರೀಕ್ಷಕ",
       tahsildar: "ತಹಶೀಲ್ದಾರ್",
-    },
-    docNames: {
-      aadhaar: "ಆಧಾರ್",
-      ration_card: "ಪಡಿತರ ಚೀಟಿ",
-      income_affidavit: "ಆದಾಯ ಘೋಷಣಾ ಪತ್ರ",
-      photo: "ಭಾವಚಿತ್ರ",
     },
   },
   en: {
-    appTitle: "Application Workflow",
-    appSub: "Income Certificate",
+    appTitle: "Income Certificate Applications",
+    appSub: "For officers",
     login: "Login",
     username: "Username",
     password: "Password",
@@ -87,7 +82,8 @@ const T = {
     pending: "Pending",
     urgent: "Urgent",
     noPending: "No pending applications",
-    waiting: (n) => `Waiting ${n} days`,
+    waiting: (n) => `${n} days at this step`,
+    totalDays: (n) => `${n} days in total`,
     back: "← Back",
     village: "Village",
     income: "Declared annual income",
@@ -137,18 +133,13 @@ const T = {
       revenue_inspector: "Revenue Inspector",
       tahsildar: "Tahsildar",
     },
-    docNames: {
-      aadhaar: "Aadhaar",
-      ration_card: "Ration card",
-      income_affidavit: "Income affidavit",
-      photo: "Photo",
-    },
   },
 };
 
-const REQUIRED_DOCS = ["aadhaar", "ration_card", "income_affidavit", "photo"];
 const NEEDS_REASON = ["return", "reject"];
 const DEMO_USERS = ["suresh", "meena", "rao"];
+const URGENT_DAYS = 5; // days at the current step before a case is marked urgent
+let aiSuggestion = ""; // the last AI draft reason shown, used to record how it was used
 
 /* ---------- Small helpers ---------- */
 let lang = safeGet("lang") || "kn";
@@ -275,12 +266,13 @@ function viewLogin() {
 
 async function viewQueue() {
   $("#app").innerHTML = `<p class="hint">…</p>`;
-  const apps = await api("/applications");
-  const urgentCount = apps.filter((a) => daysSince(a.created_at) >= 10).length;
+  const apps = await api(`/applications?lang=${lang}`);
+  const urgentCount = apps.filter((a) => daysSince(a.stage_entered_at) >= URGENT_DAYS).length;
 
   const cards = apps.map((a) => {
-    const days = daysSince(a.created_at);
-    const level = days >= 10 ? "high" : days >= 5 ? "mid" : "low";
+    const days = daysSince(a.stage_entered_at);
+    const level = days >= URGENT_DAYS ? "high" : days >= 3 ? "mid" : "low";
+    const chips = (a.flags || []).map((f) => `<span class="flag-chip">⚠ ${esc(f)}</span>`).join("");
     return `
       <a class="card ${level}" href="#/case/${a.id}">
         <div class="row">
@@ -291,6 +283,8 @@ async function viewQueue() {
           <span>${esc(a.village)} · ${esc(a.occupation)}</span>
           <span class="badge">${esc(t("statusNames")[a.status] || a.status)}</span>
         </div>
+        <div class="meta">${esc(t("totalDays")(daysSince(a.created_at)))}</div>
+        ${chips ? `<div class="chips">${chips}</div>` : ""}
       </a>`;
   }).join("");
 
@@ -305,13 +299,13 @@ async function viewQueue() {
 
 async function viewCase(id) {
   $("#app").innerHTML = `<p class="hint">…</p>`;
-  const data = await api(`/applications/${id}`);
+  aiSuggestion = "";
+  const data = await api(`/applications/${id}?lang=${lang}`);
   const a = data.application;
-  const have = new Set((a.documents || "").split(",").filter(Boolean));
 
-  const docs = REQUIRED_DOCS.map((d) => have.has(d)
-    ? `<li class="ok">${esc(t("docNames")[d])}</li>`
-    : `<li class="missing">${esc(t("docNames")[d])} (${esc(t("missing"))})</li>`).join("");
+  const docs = data.documents.map((d) => d.present
+    ? `<li class="ok">${esc(d.name)}</li>`
+    : `<li class="missing">${esc(d.name)} (${esc(t("missing"))})</li>`).join("");
 
   const timeline = data.history.length
     ? data.history.map((h) => `
@@ -381,10 +375,12 @@ async function submitAction(id, action, button) {
     return;
   }
   document.querySelectorAll("[data-action]").forEach((b) => (b.disabled = true));
+  // none = AI draft not used, used = used as written, edited = used then changed
+  const aiUse = !aiSuggestion ? "none" : reason === aiSuggestion ? "used" : reason ? "edited" : "none";
   try {
     await api(`/applications/${id}/action`, {
       method: "POST",
-      body: JSON.stringify({ action, reason }),
+      body: JSON.stringify({ action, reason, ai_reason_use: aiUse }),
     });
     toast(t("done"));
     location.hash = "#/";
@@ -406,7 +402,7 @@ async function runAssist(id, button) {
       ${flags || `<p class="hint">${esc(t("aiNone"))}</p>`}
       ${r.suggested_reason ? `<button id="ai-use" class="chip" type="button">${esc(t("aiUseReason"))}</button>` : ""}`;
     const use = $("#ai-use");
-    if (use) use.onclick = () => { $("#reason").value = r.suggested_reason; };
+    if (use) use.onclick = () => { $("#reason").value = r.suggested_reason; aiSuggestion = r.suggested_reason.trim(); };
   } catch (err) {
     if (err.message !== "401") out.innerHTML = `<p class="error">${esc(t("aiError"))}</p>`;
   } finally {

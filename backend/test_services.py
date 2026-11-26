@@ -70,3 +70,21 @@ def test_return_without_reason_is_refused_and_changes_nothing(session):
 
     perform_action(session, app.id, Action.RETURN_, Role.REVENUE_INSPECTOR, "Meena", "Income unclear")
     assert app.status == State.FIELD_VERIFICATION
+
+
+def test_action_records_stage_entry_time_and_ai_use(session):
+    app = Application(
+        applicant_name="Aks",
+        village="Kathua",
+        declared_income=90000,
+        status=State.FIELD_VERIFICATION
+    )
+    session.add(app)
+    session.commit()
+    before = app.stage_entered_at
+
+    perform_action(session, app.id, Action.FORWARD, Role.VILLAGE_ACCOUNTANT, "Suresh", "ok", "edited")
+
+    assert app.stage_entered_at >= before
+    row = session.exec(select(History)).all()[0]
+    assert row.ai_reason_use == "edited"
