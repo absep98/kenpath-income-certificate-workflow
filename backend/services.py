@@ -1,6 +1,12 @@
 from sqlmodel import Session
 from models import Application, History
-from workflow import next_state
+from workflow import Action, next_state
+
+REASON_REQUIRED = {Action.RETURN_, Action.REJECT}
+
+
+class ReasonRequired(Exception):
+    pass
 
 
 #  a service layer encapsulates business logic and coordinates operation btw api layer, domain logic
@@ -16,6 +22,10 @@ def perform_action(session: Session, application_id: int, action, role, actor_na
 
     old_status = application.status
     new_status = next_state(old_status, action, role)
+
+    # Returning or rejecting a case must always leave a written reason in the history.
+    if action in REASON_REQUIRED and not reason.strip():
+        raise ReasonRequired(f"A reason is required to {action.value} a case")
 
     # modifying python obj associated with sqlalchmey session (the ORM tracks this change) called dirty tracking
     application.status = new_status

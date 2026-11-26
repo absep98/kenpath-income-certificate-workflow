@@ -2,7 +2,7 @@ import pytest
 from sqlmodel import SQLModel, Session, create_engine, select
 from models import Application, History
 from workflow import State, Role, Action, InvalidTransition
-from services import perform_action
+from services import perform_action, ReasonRequired
 
 # a fixture is resuable setup code that provides resources to tests
 @pytest.fixture
@@ -50,3 +50,23 @@ def test_forward_negative_updates(session):
     assert app.status == State.FIELD_VERIFICATION
     rows = session.exec(select(History)).all()
     assert len(rows) == 0
+
+def test_return_without_reason_is_refused_and_changes_nothing(session):
+    app = Application(
+        applicant_name="Aks",
+        village="Kathua",
+        declared_income=90000,
+        status=State.RI_REVIEW
+    )
+    session.add(app)
+    session.commit()
+
+    for blank in ("", "   "):
+        with pytest.raises(ReasonRequired):
+            perform_action(session, app.id, Action.RETURN_, Role.REVENUE_INSPECTOR, "Meena", blank)
+
+    assert app.status == State.RI_REVIEW
+    assert len(session.exec(select(History)).all()) == 0
+
+    perform_action(session, app.id, Action.RETURN_, Role.REVENUE_INSPECTOR, "Meena", "Income unclear")
+    assert app.status == State.FIELD_VERIFICATION

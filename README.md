@@ -24,7 +24,7 @@ Workflow (4 stages, each with its own officer):
 | Revenue Inspector review | Revenue Inspector | forward, return to field verification, reject |
 | Final decision | Tahsildar | approve, reject, return to RI |
 
-Approved and Rejected are final. Return and reject require a written reason.
+Approved and Rejected are final. Return and reject require a written reason, enforced on the server (HTTP 422), not just in the UI.
 
 The UI is Kannada by default with an English toggle, and is built mobile-first with large tap targets.
 
@@ -63,7 +63,7 @@ Why it should work: the delays come from cases sitting unnoticed and from incomp
 - **SQLite.** Enough for a demo. The demo DB is re-seeded on start when empty because free hosting has an ephemeral disk. For production I would use Postgres with Alembic migrations (`create_all` does not alter existing tables).
 - **AI as an optional layer.** Isolated in `backend/ai.py` so its failure cannot affect the workflow.
 
-Known shortcuts (honest list): demo passwords are plain text in code; the "reason required for return/reject" rule is enforced in the UI but not yet on the server; there is no citizen-facing intake form (cases are seeded); API tests are limited to the workflow and service layers.
+Known shortcuts (honest list): demo passwords are plain text in code; there is no citizen-facing intake form (cases are seeded); API tests are limited to the workflow and service layers.
 
 ## 6. Run locally
 
@@ -79,7 +79,7 @@ python -m venv .venv
 
 Open http://localhost:8000. To enable the LLM part, put `GROQ_API_KEY=your_key` in a `.env` file in `backend/` (never commit it). Without a key the app still runs with rule flags only.
 
-Run the tests: `.venv\Scripts\python.exe -m pytest -q` (14 tests).
+Run the tests: `.venv\Scripts\python.exe -m pytest -q` (15 tests).
 
 ## Layout
 

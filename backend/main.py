@@ -8,7 +8,7 @@ from sqlmodel import Session, select
 from auth import USERS, create_token, current_user
 from models import Application, engine, create_db, History
 from workflow import states_for_role, Action, InvalidTransition, allowed_actions
-from services import perform_action
+from services import perform_action, ReasonRequired
 from ai import rule_flags, flag_text, llm_assist
 
 create_db()
@@ -63,6 +63,8 @@ def take_action(
 
     except InvalidTransition as e:
         raise HTTPException(status_code=403, detail=str(e))
+    except ReasonRequired as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return application
