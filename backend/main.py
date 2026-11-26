@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, Depends, HTTPException
@@ -13,10 +14,12 @@ from ai import rule_flags, flag_text, llm_assist, document_status
 
 create_db()
 # Demo hosting has an ephemeral disk: if the database is empty, load the demo cases.
-with Session(engine) as _s:
-    if _s.exec(select(Application)).first() is None:
-        from seed import seed
-        seed()
+# Demo-only behaviour: set DEMO_SEED=0 to disable it (e.g. for any real deployment).
+if os.environ.get("DEMO_SEED", "1") != "0":
+    with Session(engine) as _s:
+        if _s.exec(select(Application)).first() is None:
+            from seed import seed
+            seed()
 app = FastAPI(title="Workflow API")
 
 

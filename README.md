@@ -28,7 +28,7 @@ Approved and Rejected are final. Return and reject require a written reason, enf
 
 The UI is Kannada by default with an English toggle, and is built mobile-first with large tap targets.
 
-**Sources and assumptions.** The officer chain (Village Accountant, then Revenue Inspector, then Tahsildar) is modelled from public descriptions of the Nadakacheri / Atalji Janasnehi Kendra income-certificate process. Titles, who signs the final certificate (it can be a Deputy Tahsildar), fee and timelines vary by district and change over time, and I did not confirm them with an officer. Each stage is a model of the process, not an official specification; see `docs/workflow.md` for what is checked and what is assumed.
+**Sources and assumptions.** This is a simplified, three-officer model of the Nadakacheri / Atalji Janasnehi Kendra income-certificate process, not an official replica. The [Tumakuru district page](https://tumkur.nic.in/?p=25892) describes the real chain as: Nadakacheri operator, then Village Accountant or Revenue Inspector field verification, then a **caseworker** who updates the status from the field report and forwards it to a signing authority. That page does not name the signing authority; third-party guides say the **Deputy Tahsildar** signs income certificates, which I could not confirm from an official source. I merged the operator and caseworker work into the officers I modelled, and used the Tahsildar as the final decision-maker. Fee, timelines and routing vary by district and change over time. Treat the stages as a reasonable model to be validated with a working officer. See `docs/workflow.md`.
 
 ## 3. Where AI helps, and why
 
@@ -46,9 +46,11 @@ Two layers:
 | Revenue Inspector review | A short summary of earlier steps and anything that does not add up between documents, flags and notes. |
 | Final decision | A brief of the key facts and a draft decision note the officer can edit. |
 
-If the LLM is down, rate-limited or has no key, the rule flags still appear and the app keeps working. Case data is sent to the model as labelled JSON with an instruction to treat it as data, so text typed into a field is not followed as an instruction.
+The AI is only as good as the data it sees. At field verification it sees just the application form, because the app has no structured field report yet, so its help there is limited to suggesting what to check on the visit. If the LLM is down, rate-limited or has no key, the rule flags still appear and the app keeps working. Case data is sent to the model as labelled JSON with an instruction to treat it as data, so text typed into a field is not followed as an instruction.
 
 Limits I know about: the income ceiling (₹3,00,000) is an illustrative demo threshold, not an official one. LLM Kannada is good for short plain sentences but can be stilted, and I have not run a formal Kannada quality evaluation. The free tier has rate limits. **Privacy:** the applicant name, village, occupation, income and officers' notes are sent to Groq. A real deployment would need consent, less personal data in the prompt (for example no name), and hosting that fits government data rules.
+
+**What this prototype does not model:** citizen application submission and document upload; the Nadakacheri operator and caseworker roles; Deputy Tahsildar versus Tahsildar signing authority; official income-eligibility rules (the ₹3,00,000 figure is illustrative and must not be used to decide eligibility); digital signature and certificate issuance; production-grade persistence of citizen data. It is a demo: do not enter real citizen data.
 
 ## 4. How to measure impact, and why it should work
 
@@ -77,7 +79,7 @@ Known shortcuts (honest list):
 - Two simultaneous actions on one case are not guarded against; a version check or conditional update would fix it.
 - `/assist` has no rate limit, so the public demo logins could use up the free LLM quota.
 - The demo uses one shared SQLite database that Render resets on restart, so testers share data and their changes disappear. Production would use Postgres with migrations.
-- API-level tests (401/403/422 paths) are not written; the tests cover the workflow, service and AI-prompt layers.
+- Demo seeding runs automatically when the database is empty. Set `DEMO_SEED=0` to turn it off for any non-demo deployment.
 
 Next steps if this were taken further: structured field report, return-to-applicant state with reason codes, Sakala deadline tracking, Postgres, and an evaluation of Kannada output quality with real officers.
 
@@ -95,7 +97,7 @@ python -m venv .venv
 
 Open http://localhost:8000. To enable the LLM part, put `GROQ_API_KEY=your_key` in a `.env` file in `backend/` (never commit it). Without a key the app still runs with rule flags only.
 
-Run the tests: `.venv\Scripts\python.exe -m pytest -q` (19 tests).
+Tests (workflow rules, the service layer including a simulated commit failure that must roll back both status and history, AI prompt construction, and API-level checks for login, role-scoped queues, cross-role access, reason rules and AI refusal for the wrong stage) use a throwaway database and never touch the demo data. Run them: `.venv\Scripts\python.exe -m pytest -q` (33 tests).
 
 ## Layout
 

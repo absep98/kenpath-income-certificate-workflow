@@ -20,6 +20,9 @@ tells the officer what to look at first. The citizen sees "pending" with no reas
 
 ## 2. Workflow stages
 
+> Simplification: public district material describes extra roles this prototype does not model. A Nadakacheri **operator** takes the application in, and a **caseworker** records the field report and forwards the case to a signing authority (reported as the Deputy Tahsildar for income certificates, which is unconfirmed). Here, intake and caseworker duties are folded into the Village Accountant and Revenue Inspector steps.
+
+
 ### Stage 1: Application Intake
 Officer: system, plus Village Accountant picks it up (assumption)
 Responsibilities: confirm the application is complete and assign it to the right VA by village.

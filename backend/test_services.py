@@ -88,3 +88,26 @@ def test_action_records_stage_entry_time_and_ai_use(session):
     assert app.stage_entered_at >= before
     row = session.exec(select(History)).all()[0]
     assert row.ai_reason_use == "edited"
+
+
+def test_failed_commit_rolls_back_status_and_history(session, monkeypatch):
+    app = Application(
+        applicant_name="Aks",
+        village="Kathua",
+        declared_income=90000,
+        status=State.FIELD_VERIFICATION
+    )
+    session.add(app)
+    session.commit()
+
+    def broken_commit():
+        raise RuntimeError("database went away")
+
+    monkeypatch.setattr(session, "commit", broken_commit)
+    with pytest.raises(RuntimeError):
+        perform_action(session, app.id, Action.FORWARD, Role.VILLAGE_ACCOUNTANT, "Suresh")
+    monkeypatch.undo()
+
+    session.refresh(app)
+    assert app.status == State.FIELD_VERIFICATION
+    assert len(session.exec(select(History)).all()) == 0

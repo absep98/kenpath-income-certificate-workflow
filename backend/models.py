@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -60,7 +61,8 @@ class History(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow, sa_column=Column(UTCDateTime()))
 
 
-engine = create_engine("sqlite:///app.db")
+# DATABASE_URL lets tests and other deployments use a different database.
+engine = create_engine(os.environ.get("DATABASE_URL", "sqlite:///app.db"))
 
 
 def create_db():

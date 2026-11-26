@@ -46,8 +46,13 @@ def perform_action(session: Session, application_id: int, action, role, actor_na
         ai_reason_use=ai_reason_use if ai_reason_use in ("none", "used", "edited") else "none",
     )
 
-    session.add(history)
-    session.commit()
+    try:
+        session.add(history)
+        session.commit()
+    except Exception:
+        # Status and history succeed or fail together.
+        session.rollback()
+        raise
     session.refresh(application)
     return application
 
